@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: pgdb
+    environment:
+      POSTGRES_USER: mic2004
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: mydb
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data   
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mic2004 -d mydb"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    container_name: node_api
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      DB_USER: mic2004
+      DB_PASSWORD: secret
+      DB_NAME: mydb
+      DB_HOST: db
+      DB_PORT: 5432
+      PORT: 3000
+    command: ["node", "server.js"]
+
+volumes:
+  pgdata:
